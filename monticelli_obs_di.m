@@ -1,0 +1,51 @@
+%  <ESTIMADOR DE ESTADOS MQP NÃO LINEAR - NON LINEAR WMS STATE ESTIMATION V1.0. 
+%  This is the main source of this software that estimates the sates of a power network (complex voltages at nodes) described using an excel input data file >
+%     Copyright (C) <2017>  <Sebastián de Jesús Manrique Machado>   <e-mail:sebastiand@utfpr.edu.br>
+% 
+%     This program is free software: you can redistribute it and/or modify
+%     it under the terms of the GNU General Public License as published by
+%     the Free Software Foundation, either version 3 of the License, or
+%     (at your option) any later version.
+% 
+%     This program is distributed in the hope that it will be useful,
+%     but WITHOUT ANY WARRANTY; without even the implied warranty of
+%     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%     GNU General Public License for more details.
+% 
+%     You should have received a copy of the GNU General Public License
+%     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+%ESTIMADOR DE ESTADOS NÃO LINEAR MQP
+%   Sebastián de Jesús Manrique Machado
+%   Estudante_Doutorado Em Engenharia Elétrica
+%   EESC/USP - 2017.
+%ANÁLISE OBSERVABILIDADE
+function [ no_lobs_i, no_lobs_j, no_mobs_i, no_mobs_j, num_tipo_mobs, tipo_mobs, num_pm_obs  ] = monticelli_obs_di( no_l_i, no_l_j, no_m_i, no_m_j, num_tipo_m, tipo_m, num_barras )
+%monticelli_obs_di Summary of this function goes here
+%   Detecção de Ilhas, método de Monticelli
+
+no_lobs_i = no_l_i
+no_lobs_j = no_l_j
+
+no_mobs_i = no_m_i
+no_mobs_j = no_m_j
+num_tipo_mobs = num_tipo_m;
+tipo_mobs = tipo_m;
+flag = 1;
+%--------------------------------------------------------------------------
+while(flag)
+    z_obs     = zeros( size(no_mobs_i,1), 1);
+    [ no_lobs_i, no_lobs_j, num_l_r ] = remover_lin( tipo_mobs, no_mobs_i, no_mobs_j, no_lobs_i, no_lobs_j );           %Remove ramos não observáveis
+    %----------------
+    [ H_obs, G_obs ] = montarH_obs( num_barras, num_tipo_mobs, tipo_mobs, no_mobs_i, no_mobs_j, no_lobs_i, no_lobs_j ); %Monta H considerando Xkm=1 com topologia atualizada
+    %disp(G_obs)
+    [ Fatores, z_obs, H_obs, num_pm_obs ] = fatorar_tri_m( num_barras, G_obs, H_obs, z_obs );                           %faz a fatoração e inclui pseudo-medidas atualizando H e z
+    
+    %IDENTIFICAÇÃO ILHAS OBSERVÁVEIS
+    delt_barras_obs = inv(H_obs'*H_obs) * H_obs' * z_obs
+    [ no_lobs_i, no_lobs_j, no_mobs_i, no_mobs_j, num_tipo_mobs, tipo_mobs, flag ] = remover_l_m_2( num_barras, delt_barras_obs, no_lobs_i, no_lobs_j, tipo_mobs, no_mobs_i, no_mobs_j, num_tipo_mobs );
+end
+disp( strcat( num2str( size(unique(delt_barras_obs), 1) ),' Ilhas observáveis encontradas:' ) )
+
+end
+

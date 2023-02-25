@@ -1,0 +1,29 @@
+function [ output_args ] = monticelli_obs_di( no_l_i, no_l_j, no_m_i, no_m_j, num_tipo_m, tipo_m, num_barras )
+%UNTITLED3 Summary of this function goes here
+%   Detailed explanation goes here
+
+no_lobs_i = no_l_i
+no_lobs_j = no_l_j
+
+no_mobs_i = no_m_i
+no_mobs_j = no_m_j
+num_tipo_mobs = num_tipo_m;
+tipo_mobs = tipo_m;
+flag = 1;
+%--------------------------------------------------------------------------
+while(flag)
+    z_obs     = zeros( size(no_mobs_i,1), 1);
+    [ no_lobs_i, no_lobs_j, num_l_r ] = remover_lin( tipo_mobs, no_mobs_i, no_mobs_j, no_lobs_i, no_lobs_j );
+    %----------------
+    [ H_obs, G_obs ] = montarH_obs( num_barras, num_tipo_mobs, tipo_mobs, no_mobs_i, no_mobs_j, no_lobs_i, no_lobs_j );
+    disp(G_obs)
+    [ Fatores, z_obs, H_obs, num_pm_obs ] = fatorar_tri_m( num_barras, G_obs, H_obs, z_obs )
+    
+    %IDENTIFICAÇÃO ILHAS OBSERVÁVEIS
+    delt_barras_obs = inv(H_obs'*H_obs) * H_obs' * z_obs
+    [ no_lobs_i, no_lobs_j, no_mobs_i, no_mobs_j, num_tipo_mobs, tipo_mobs, flag ] = remover_l_m_2( num_barras, delt_barras_obs, no_lobs_i, no_lobs_j, tipo_mobs, no_mobs_i, no_mobs_j, num_tipo_mobs );
+end
+disp( strcat( num2str( size(unique(delt_barras_obs), 1) ),' Ilhas observáveis encontradas:' ) )
+
+end
+

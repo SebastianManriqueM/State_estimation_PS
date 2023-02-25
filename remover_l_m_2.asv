@@ -1,0 +1,61 @@
+%  <ESTIMADOR DE ESTADOS MQP NÃO LINEAR - NON LINEAR WMS STATE ESTIMATION V1.0. 
+%  This is the main source of this software that estimates the sates of a power network (complex voltages at nodes) described using an excel input data file >
+%     Copyright (C) <2017>  <Sebastián de Jesús Manrique Machado>   <e-mail:sebastiand@utfpr.edu.br>
+% 
+%     This program is free software: you can redistribute it and/or modify
+%     it under the terms of the GNU General Public License as published by
+%     the Free Software Foundation, either version 3 of the License, or
+%     (at your option) any later version.
+% 
+%     This program is distributed in the hope that it will be useful,
+%     but WITHOUT ANY WARRANTY; without even the implied warranty of
+%     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%     GNU General Public License for more details.
+% 
+%     You should have received a copy of the GNU General Public License
+%     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+%ESTIMADOR DE ESTADOS NÃO LINEAR MQP
+%   Sebastián de Jesús Manrique Machado
+%   Estudante_Doutorado Em Engenharia Elétrica
+%   EESC/USP - 2017.
+%ANÁLISE OBSERVABILIDADE
+function [ no_lobs_i, no_lobs_j, no_mobs_i, no_mobs_j, num_tipo_mobs, tipo_mobs, contador ] = remover_l_m_2( num_barras, delt_barras_obs, no_lobs_i, no_lobs_j, tipo_mobs, no_mobs_i, no_mobs_j, num_tipo_mobs )
+%remover_l_m_2 Summary of this function goes here
+%   Remove linhas cujo fluxo calculado é diferente de zero (ramos não
+%   observáveis e elimina medidads de injeção adjacentes a estas linhas.
+%   Atualiza topologia (no_lobs_x), e medidas (no_mobs_x, num_tipo_mobs,
+%   tipo_mobs). COntador indica se foram eliminadas linhas, neste caso é
+%   preciso iterar, caso contrario as ilhas foram identificadas).
+
+S_ij_obs        = zeros(num_barras, num_barras);
+contador        = 0;
+contadorb       = 0;
+%z_obs           = zeros(num_medidas, 1);%%%%%%%%%%%---------------------
+for i = 1 : size(no_lobs_i,1)                               %Remover da Rede linhas com fluxo != 0
+    a = i-contador;
+    S_ij_obs(no_lobs_i(a), no_lobs_j(a)) = (delt_barras_obs( no_lobs_i(a) ) - delt_barras_obs( no_lobs_j(a) ));
+    if ( abs( S_ij_obs(no_lobs_i(a), no_lobs_j(a)) ) > 1e-10 )
+        
+        for j = 1 : size(no_mobs_i,1)                       %Remover medidas de Pinj adjacentes
+            b = j - contadorb;
+            if tipo_mobs(b) == 2
+                if(no_mobs_i(b) == no_lobs_i(a)) || (no_mobs_i(j) == no_lobs_j(a))
+                    no_mobs_i = [no_mobs_i(1:j-1, :) ;no_mobs_i(j+1:size(no_mobs_i,1), :) ];
+                    no_mobs_j = [no_mobs_j(1:j-1, :) ;no_mobs_j(j+1:size(no_mobs_j,1), :) ];
+                    num_tipo_mobs(2) = num_tipo_mobs(2) - 1;
+                    tipo_mobs = [tipo_mobs(1:j-1, :) ;tipo_mobs(j+1:size(tipo_mobs,1), :) ];
+                    contadorb = contadorb + 1
+                end
+            end
+        end
+        %Removendo linhas/ramos não observáveis
+        no_lobs_i = [no_lobs_i(1:a-1, :) ;no_lobs_i(a+1:size(no_lobs_i,1), :) ];
+        no_lobs_j = [no_lobs_j(1:a-1, :) ;no_lobs_j(a+1:size(no_lobs_j,1), :) ];
+        contador  = contador + 1;        
+    end
+    
+end
+
+end
+

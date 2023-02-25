@@ -1,0 +1,52 @@
+%  <ESTIMADOR DE ESTADOS MQP NÃO LINEAR - NON LINEAR WMS STATE ESTIMATION V1.0. 
+%  This is the main source of this software that estimates the sates of a power network (complex voltages at nodes) described using an excel input data file >
+%     Copyright (C) <2017>  <Sebastián de Jesús Manrique Machado>   <e-mail:sebastiand@utfpr.edu.br>
+% 
+%     This program is free software: you can redistribute it and/or modify
+%     it under the terms of the GNU General Public License as published by
+%     the Free Software Foundation, either version 3 of the License, or
+%     (at your option) any later version.
+% 
+%     This program is distributed in the hope that it will be useful,
+%     but WITHOUT ANY WARRANTY; without even the implied warranty of
+%     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%     GNU General Public License for more details.
+% 
+%     You should have received a copy of the GNU General Public License
+%     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+%ESTIMADOR DE ESTADOS NÃO LINEAR MQP
+%   Sebastián de Jesús Manrique Machado
+%   Estudante_Doutorado Em Engenharia Elétrica
+%   EESC/USP - 2017.
+%ANÁLISE OBSERVABILIDADE
+function [ H_obs, G_obs ] = montarH_obs( num_barras, num_tipo_m, tipo_m, no_m_i, no_m_j, no_l_i, no_l_j )
+%UNTITLED Summary of this function goes here
+%   Monta matriz Jacobiana (H) do modelo Linear P/theta (medidas tipo 1 e tipo 2) considerando Xkm=1
+%   com topologia atualizada. Devolv tamém A Matriz de Ganho
+
+H_obs    = zeros( num_tipo_m(1)+num_tipo_m(2), num_barras );
+contador = 1;
+%FAZER MATRIZ H
+for i = 1 : size(no_m_i,1)
+   if(tipo_m(i) == 1)
+       H_obs( contador, no_m_i(i) ) = 1;
+       H_obs( contador, no_m_j(i) ) = -1;
+       contador = contador + 1;
+   elseif(tipo_m(i) == 2)
+       for j = 1 : size(no_l_i,1)
+           if( no_m_i(i) ==  no_l_i(j) )
+               H_obs( contador, no_m_i(i) ) = H_obs( contador, no_m_i(i) ) + 1;
+               H_obs( contador, no_l_j(j) ) = -1 ;
+           elseif ( no_m_i(i) ==  no_l_j(j) )
+               H_obs( contador, no_m_i(i) ) = H_obs( contador, no_m_i(i) ) + 1;
+               H_obs( contador, no_l_i(j) ) = -1 ;
+           end
+       end
+       contador = contador + 1;
+   end
+   
+end
+G_obs = H_obs' * H_obs;
+end
+
